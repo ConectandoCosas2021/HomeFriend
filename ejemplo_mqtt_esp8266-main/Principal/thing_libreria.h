@@ -13,8 +13,8 @@
 #define AUTHOR_EMAIL "homefriend2021@gmail.com"
 #define AUTHOR_PASSWORD "HomE2021#$"
 #define RECIPIENT_EMAIL "luispsn1497@gmail.com"
-
-
+void iniciar_stmp();
+void smtpCallback(SMTP_Status status);
 void setup_wifi(); //incializa el wifi
 long readUltrasonicDistance();//leer del ultrasonido
 void setBlueLed(bool value); //prende un led

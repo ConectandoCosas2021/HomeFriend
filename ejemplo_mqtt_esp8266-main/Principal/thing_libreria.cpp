@@ -2,7 +2,7 @@
 
 const int triggerPin = 15;
 const int echoPin = 14;
-
+SMTPSession smtp;
 const char* ssid = "perdedores";
 const char* password = "somos perdedores 1375";
 const char* token = "WCw44NcuFq0tT0eVRQ5l";
@@ -39,7 +39,7 @@ void setup_session(ESP_Mail_Session &session){
   session.login.user_domain = "";
 }
 
-  void setup_message(SMTP_Message &message){
+void setup_message(SMTP_Message &message){
   /* Set the message headers */
   message.sender.name = "HOMEFRIEND";
   message.sender.email = AUTHOR_EMAIL;
@@ -50,11 +50,56 @@ void setup_session(ESP_Mail_Session &session){
   message.html.content = htmlMsg.c_str();
   message.html.content = htmlMsg.c_str();
   message.text.charSet = "us-ascii";
-  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
-  
+  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;  
   /* Set the custom message header */
   //message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
 
+}
+
+
+void iniciar_stmp(){
+  
+  smtp.debug(1);  
+  smtp.callback(smtpCallback);  
+  ESP_Mail_Session session;
+  setup_session(session); 
+  SMTP_Message message;
+  setup_message(message);  
+  /* Connect to server with the session config */
+  if (!smtp.connect(&session))
+    return;
+  /* Start sending Email and close the session */
+  if (!MailClient.sendMail(&smtp, &message))
+    Serial.println("Error sending Email, " + smtp.errorReason());
+    //Fin setup para Mail
+  }
+
+void smtpCallback(SMTP_Status status){
+  /* Print the current status */
+  Serial.println(status.info());
+
+  /* Print the sending result */
+  if (status.success()){
+    Serial.println("----------------");
+    ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
+    ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
+    Serial.println("----------------\n");
+    struct tm dt;
+
+    for (size_t i = 0; i < smtp.sendingResult.size(); i++){
+      /* Get the result item */
+      SMTP_Result result = smtp.sendingResult.getItem(i);
+      time_t ts = (time_t)result.timestamp;
+      localtime_r(&ts, &dt);
+
+      ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
+      ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
+      ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+      ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients);
+      ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
+    }
+    Serial.println("----------------\n");
+  }
 }
 /////////////////////////////////////////////////////////////
 long readUltrasonicDistance(){
