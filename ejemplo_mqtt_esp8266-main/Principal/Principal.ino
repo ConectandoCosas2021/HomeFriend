@@ -71,11 +71,17 @@ void handle_jpg_stream(void) //loop infinito esto va a ir a un core
 
   client.write(HEADER, hdrLen);
   client.write(BOUNDARY, bdrLen);
-  
-  while (true)
-  {
-    if (!client.connected()) break;
-
+  bool entro=false;
+  bool primera=true;
+  while (client.connected())
+  { entro=true;
+    if (primera){
+      esp_camera_deinit();//des inicializa la camara
+      camera_config_t config;
+      set_camara_config(config);
+      cam.init(config);
+      primera=false;
+      }
     cam.run(); //saca una nueva foto, el fb queda guardado en la variable de clase
     s = cam.getSize();
     client.write(CTNTTYPE, cntLen);
@@ -86,6 +92,13 @@ void handle_jpg_stream(void) //loop infinito esto va a ir a un core
     Serial.print("stream en core :");
     Serial.println(xPortGetCoreID());//core en el que se ejecuta
   }
+  if (entro){
+    esp_camera_deinit();//des inicializa la camara
+    camera_config_t config; //crea una config nueva
+    set_camara_config2(config); //configura para el motion sensor
+    Serial.println("incia la camara");
+    cam.init(config);//inica la camara
+    }
 }
 
 const char JHEADER[] = "HTTP/1.1 200 OK\r\n" \
@@ -96,10 +109,8 @@ const int jhdLen = strlen(JHEADER);
 void handle_jpg(void)
 {
   WiFiClient client = server.client();
-
   cam.run();
   if (!client.connected()) return;
-
   client.write(JHEADER, jhdLen);
   client.write((char *)cam.getfb(), cam.getSize());
 }
@@ -125,9 +136,9 @@ void setup() {
   /////
   SPIFFS.begin(true);
   delay(1000);
-  camera_config_t config;
-  set_camara_config(config);
-  cam.init(config);
+//  camera_config_t config;
+//  set_camara_config(config);
+//  cam.init(config);
   set_motion_config();
   //////wifi 2////
   IPAddress ip;
@@ -157,14 +168,26 @@ void setup() {
   client.setCallback(callback);
   iniciar_stmp();    
  /////////////////////////////////////////////////////////////////   
+
+  camera_config_t config;
+  set_camara_config2(config);
+  Serial.println("incia la camara");
+  cam.init(config);
 }
 
 void loop(){
+
   if (!client.connected()) {//conexion a thingsboard
     reconnect(client);
   }
   client.loop();
   server.handleClient();
+  
+  cam.run();//guarda la foto en el buffer     
+  procces_buffer(cam.getfb()); //camputra frames
+  hay_movimiento(); //detecta si hay o no movimiento  
+  
+//  delay(30);//fps estaba en 30
   
   cm = readUltrasonicDistance();
   unsigned long now = millis();
