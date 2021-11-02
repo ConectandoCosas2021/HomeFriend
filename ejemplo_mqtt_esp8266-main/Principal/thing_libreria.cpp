@@ -123,7 +123,7 @@ void setBlueLed(bool value){
 }
 }
 ////////////END prende apaga led/////////////////////////////////////
-////////////Reconectarse a thignsboard/////////////////////////////////////
+////////////Reconectarse a thingsboard/////////////////////////////////////
 void reconnect(PubSubClient &client) {//reconectarse a thingsboard
   // Loop until we're reconnected
   while (!client.connected()) {

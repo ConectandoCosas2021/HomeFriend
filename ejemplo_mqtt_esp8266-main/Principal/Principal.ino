@@ -10,10 +10,12 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 WebServer server(80);
 OV2640 cam;
-
+DHTesp dht;
 #define MSG_BUFFER_SIZE  (50)
 #define CAMERA_MODEL_AI_THINKER
 #define timeit(label, code) code;
+#define DHT_PIN 2
+
 void bring_resources();
 
 
@@ -132,7 +134,8 @@ const char* mqtt_server = "demo.thingsboard.io";
 void setup() {
   pinMode(2, OUTPUT);     //(LED AZUL)
   Serial.begin(115200);
-
+  /////
+  dht.setup(DHT_PIN, DHTesp::DHT11);
   /////
   SPIFFS.begin(true);
   delay(1000);
@@ -189,11 +192,19 @@ void loop(){
   
 //  delay(30);//fps estaba en 30
   
-  cm = readUltrasonicDistance();
+  //cm = readUltrasonicDistance();
+  cm = 22; //Esto hay que sacarlo cuando metamos el sensor de distancia
+  TempAndHumidity lastValues = dht.getTempAndHumidity();//setup de last values
+  Serial.print((int) lastValues.temperature); Serial.println(" C"); 
+  Serial.print((int)lastValues.humidity); Serial.println(" %");
   unsigned long now = millis();
-  if (now - lastMsg > 200) {
+  if (now - lastMsg > 2000) {
     lastMsg = now;
     snprintf (msg, MSG_BUFFER_SIZE, "{'valor': %ld}", cm);
     client.publish("v1/devices/me/telemetry", msg);    
-  }
+    snprintf (msg, MSG_BUFFER_SIZE, "{'temperatura': %ld}", (int)lastValues.temperature);
+    client.publish("v1/devices/me/telemetry", msg);
+    snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", (int)lastValues.humidity);
+    client.publish("v1/devices/me/telemetry", msg);
+    }
 }//end loop
