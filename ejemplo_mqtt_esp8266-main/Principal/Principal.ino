@@ -5,6 +5,8 @@
 #include <SPIFFS.h>
 #include "stream_library.h"
 #include "my_library.h"
+
+TaskHandle_t Task2;//LOOP INFINITO EN CORE 0
 DynamicJsonDocument incoming_message(1024);
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -176,35 +178,60 @@ void setup() {
   set_camara_config2(config);
   Serial.println("incia la camara");
   cam.init(config);
+
+///
+    xTaskCreatePinnedToCore(
+    Task2code,   /* Task function. */
+    "Task2",     /* name of task. */
+    10000,       /* Stack size of task */
+    NULL,        /* parameter of the task */
+    1,           /* priority of the task */
+    &Task2,      /* Task handle to keep track of created task */
+    0);          /* pin task to core 1 */
+  delay(500);
 }
 
-void loop(){
+void Task2code( void * pvParameters ) {// core 0
+  TickType_t tiempodormir=xTaskGetTickCount(); 
+  for (;;) { // infinite loop
+    Serial.print("task2 :");
+  Serial.println(xPortGetCoreID());//core en el que se ejecuta
+  server.handleClient();
+  cam.run();//guarda la foto en el buffer     
+  procces_buffer(cam.getfb()); //camputra frames
+  hay_movimiento(); //detecta si hay o no movimiento  
+    
+  }
+  }
 
+void loop(){
+  
   if (!client.connected()) {//conexion a thingsboard
     reconnect(client);
   }
   client.loop();
-  server.handleClient();
+//  server.handleClient();
   
-  cam.run();//guarda la foto en el buffer     
-  procces_buffer(cam.getfb()); //camputra frames
-  hay_movimiento(); //detecta si hay o no movimiento  
+//  cam.run();//guarda la foto en el buffer     
+//  procces_buffer(cam.getfb()); //camputra frames
+//  hay_movimiento(); //detecta si hay o no movimiento  
   
 //  delay(30);//fps estaba en 30
   
   //cm = readUltrasonicDistance();
   cm = 22; //Esto hay que sacarlo cuando metamos el sensor de distancia
   TempAndHumidity lastValues = dht.getTempAndHumidity();//setup de last values
-  Serial.print((int) lastValues.temperature); Serial.println(" C"); 
-  Serial.print((int)lastValues.humidity); Serial.println(" %");
+  //Serial.print((int) lastValues.temperature); Serial.println(" C"); 
+  //Serial.print((int)lastValues.humidity); Serial.println(" %");
   unsigned long now = millis();
   if (now - lastMsg > 2000) {
     lastMsg = now;
     snprintf (msg, MSG_BUFFER_SIZE, "{'valor': %ld}", cm);
-    client.publish("v1/devices/me/telemetry", msg);    
-    snprintf (msg, MSG_BUFFER_SIZE, "{'temperatura': %ld}", (int)lastValues.temperature);
     client.publish("v1/devices/me/telemetry", msg);
-    snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", (int)lastValues.humidity);
-    client.publish("v1/devices/me/telemetry", msg);
+    // #TODO aca tenemos que hacer un if not nan envio (lastValues.temperature y lastValues.humidity)   
+      snprintf (msg, MSG_BUFFER_SIZE, "{'temperatura': %ld}", (int)lastValues.temperature);
+      client.publish("v1/devices/me/telemetry", msg);
+      snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", (int)lastValues.humidity);
+      client.publish("v1/devices/me/telemetry", msg);
     }
 }//end loop
