@@ -5,6 +5,8 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 //#include <Servo.h>
+#include <DHTesp.h>
+#include <ThingsBoard.h>
 
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 465
