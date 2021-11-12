@@ -1,5 +1,6 @@
 #include "thing_libreria.h"
 
+const int laserPin = 12;
 const int triggerPin = 15;
 const int echoPin = 14;
 SMTPSession smtp;
@@ -116,10 +117,14 @@ long readUltrasonicDistance(){
 }
 ////////////prende apaga led/////////////////////////////////////
 void setBlueLed(bool value){
+  pinMode(laserPin, OUTPUT);
+  Serial.println(value);
   if (value){
-  digitalWrite(2, HIGH);
+  digitalWrite(laserPin, HIGH);
+  Serial.println("Estoy en HIGH");
 } else {
-  digitalWrite(2, LOW);
+  Serial.println("Estoy en LOW");
+  digitalWrite(laserPin, LOW);
 }
 }
 ////////////END prende apaga led/////////////////////////////////////

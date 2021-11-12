@@ -17,7 +17,7 @@ DHTesp dht;
 #define CAMERA_MODEL_AI_THINKER
 #define timeit(label, code) code;
 #define DHT_PIN 2
-
+#define pdTICKS_TO_MS( xTicks )   ( ( uint32_t ) ( xTicks ) * 1000 / configTICK_RATE_HZ )
 void bring_resources();
 
 
@@ -29,6 +29,9 @@ char msg2[MSG_BUFFER_SIZE];
 int value = 0;
 boolean estado = false;
 int cm = 0; //cm del sensor de ultra sonido
+bool mov_detected = false;
+TickType_t empezo=xTaskGetTickCount(); 
+
 
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -134,6 +137,7 @@ void handleNotFound()
 //////////////////////SETUP////////////////////////////////////////////////
 const char* mqtt_server = "demo.thingsboard.io";
 void setup() {
+  
   pinMode(2, OUTPUT);     //(LED AZUL)
   Serial.begin(115200);
   /////
@@ -141,10 +145,8 @@ void setup() {
   /////
   SPIFFS.begin(true);
   delay(1000);
-//  camera_config_t config;
-//  set_camara_config(config);
-//  cam.init(config);
   set_motion_config();
+  
   //////wifi 2////
   IPAddress ip;
 
@@ -192,15 +194,17 @@ void setup() {
 }
 
 void Task2code( void * pvParameters ) {// core 0
-  TickType_t tiempodormir=xTaskGetTickCount(); 
+  
   for (;;) { // infinite loop
-    Serial.print("task2 :");
-  Serial.println(xPortGetCoreID());//core en el que se ejecuta
+//  Serial.print("task2 :");
+//  Serial.println(xPortGetCoreID());//core en el que se ejecuta
   server.handleClient();
   cam.run();//guarda la foto en el buffer     
   procces_buffer(cam.getfb()); //camputra frames
-  hay_movimiento(); //detecta si hay o no movimiento  
-    
+  hay_movimiento(mov_detected); //detecta si hay o no movimiento  
+  if (mov_detected){
+  Serial.print("valor de bandera fuera del loop" );Serial.println(mov_detected);  
+  }
   }
   }
 
@@ -210,28 +214,36 @@ void loop(){
     reconnect(client);
   }
   client.loop();
-//  server.handleClient();
-  
-//  cam.run();//guarda la foto en el buffer     
-//  procces_buffer(cam.getfb()); //camputra frames
-//  hay_movimiento(); //detecta si hay o no movimiento  
-  
-//  delay(30);//fps estaba en 30
   
   //cm = readUltrasonicDistance();
-  cm = 22; //Esto hay que sacarlo cuando metamos el sensor de distancia
-  TempAndHumidity lastValues = dht.getTempAndHumidity();//setup de last values
-  //Serial.print((int) lastValues.temperature); Serial.println(" C"); 
-  //Serial.print((int)lastValues.humidity); Serial.println(" %");
-  unsigned long now = millis();
-  if (now - lastMsg > 2000) {
-    lastMsg = now;
-    snprintf (msg, MSG_BUFFER_SIZE, "{'valor': %ld}", cm);
+  cm = 22; //Esto hay que sacarlo cuando metamos el sensor de distancia  
+  
+  
+
+  
+  if (pdTICKS_TO_MS(xTaskGetTickCount() - empezo)> 20000) {
+    empezo = xTaskGetTickCount();
+    TempAndHumidity lastValues = dht.getTempAndHumidity();//Tomo la temperatura   
+    int temp = (int)lastValues.temperature;
+    int hum = (int)lastValues.humidity;
+    Serial.print("temperatura ");Serial.println(temp);
+    Serial.print("temperatura ");Serial.println(lastValues.temperature);
+    
+    if (temp==2147483647 || hum==2147483647){    
+      Serial.println("No se tomo bien la temperatura");
+    }
+    else{
+        snprintf (msg, MSG_BUFFER_SIZE, "{'temperatura': %ld}", temp);
+         
+        client.publish("v1/devices/me/telemetry", msg);
+        snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", hum);
+        client.publish("v1/devices/me/telemetry", msg);
+      }
+      
+    snprintf (msg, MSG_BUFFER_SIZE, "{'movimiento': %ld}", mov_detected);
+    Serial.print("valor de bandera fuera antes de enviar" );Serial.println(mov_detected);  
+    mov_detected=false;
     client.publish("v1/devices/me/telemetry", msg);
-    // #TODO aca tenemos que hacer un if not nan envio (lastValues.temperature y lastValues.humidity)   
-      snprintf (msg, MSG_BUFFER_SIZE, "{'temperatura': %ld}", (int)lastValues.temperature);
-      client.publish("v1/devices/me/telemetry", msg);
-      snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", (int)lastValues.humidity);
-      client.publish("v1/devices/me/telemetry", msg);
+  
     }
 }//end loop
