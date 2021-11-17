@@ -11,3 +11,4 @@
 void setBlueLed(bool value);
 void setup_wifi();
 void reconnect(PubSubClient &client);
+void setGrados(int grados, int &gradosActual);

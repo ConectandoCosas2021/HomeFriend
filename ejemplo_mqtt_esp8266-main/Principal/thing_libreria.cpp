@@ -3,12 +3,12 @@
 const int laserPin = 12;
 //const int triggerPin = 15;
 //const int echoPin = 14;
-const char* ssid = "perdedores";
-const char* password = "somos perdedores 1375";
-const char* token = "WCw44NcuFq0tT0eVRQ5l"; //Fijarse nuevo token
+const char* ssid = "NewProt";
+const char* password = "Protel16088";
+const char* token = "H27rHId7IM9zxemfkjXb"; //Fijarse nuevo token
+
 ////////////////////// setup wifi///////////////////////////////////////
 void setup_wifi() {
-
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println();
@@ -22,9 +22,7 @@ void setup_wifi() {
     delay(500);
     Serial.print(".");
   }
-
   randomSeed(micros());
-
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
