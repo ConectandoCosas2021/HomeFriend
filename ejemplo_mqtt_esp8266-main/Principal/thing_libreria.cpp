@@ -3,8 +3,8 @@
 const int laserPin = 12;
 //const int triggerPin = 15;
 //const int echoPin = 14;
-const char* ssid = "NewProt";
-const char* password = "Protel16088";
+const char* ssid = "perdedores";
+const char* password = "somos perdedores 1375";
 const char* token = "H27rHId7IM9zxemfkjXb"; //Fijarse nuevo token
 
 ////////////////////// setup wifi///////////////////////////////////////

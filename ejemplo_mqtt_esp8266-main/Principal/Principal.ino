@@ -128,15 +128,8 @@ void loop(){
     else{
         snprintf (msg, MSG_BUFFER_SIZE, "{'temperatura': %ld}", temp);
         client.publish("v1/devices/me/telemetry", msg);
-        Serial.println("Envio Temp");
         snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", hum);
         client.publish("v1/devices/me/telemetry", msg);
-        Serial.println("Envio Hum");
-        snprintf (msg, MSG_BUFFER_SIZE, "{'server_ip': %s}", WiFi.localIP().toString().c_str());
-        client.publish("v1/devices/me/telemetry", msg);
-        Serial.print("Envio Ip: ");
-        Serial.println(WiFi.localIP().toString().c_str());
       }
-     
     }
 }//end loop
