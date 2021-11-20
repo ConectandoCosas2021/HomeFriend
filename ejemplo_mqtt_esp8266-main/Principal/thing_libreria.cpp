@@ -1,6 +1,6 @@
 #include "thing_libreria.h"
 
-const int laserPin = 12;
+const int laserPin = 4;
 
 SMTPSession smtp;
 const char* ssid = "perdedores";

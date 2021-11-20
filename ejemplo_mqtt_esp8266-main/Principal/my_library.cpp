@@ -27,8 +27,8 @@ using namespace Eloquent::Vision;
 #define h 24
 
  //podriamos ver de setearlos online
-#define DIFF_THRESHOLD 15
-#define MOTION_THRESHOLD 0.20
+#define DIFF_THRESHOLD 20
+#define MOTION_THRESHOLD 0.30
 
 // delete the second definition if you want to turn on code benchmarking
 //#define timeit(label, code) { uint32_t start = millis(); code; uint32_t duration = millis() - start; eloquent::io::print_all("It took ", duration, " millis for ", label); }
