@@ -1,7 +1,7 @@
 ## HOME FRIEND
 **Más que un robot, un amigo del hogar**
 
-<img src="WhatsApp%20Image%202020-10-18%20at%2015.21.43.jpeg" alt="drawing"  height ="200" width="200" />
+<img src="doc/WhatsApp%20Image%202020-10-18%20at%2015.21.43.jpeg" alt="drawing"  height ="200" width="200" />
 
 ### DESCRIPCION
 
@@ -13,7 +13,7 @@ Quienes tienen mascotas en el hogar saben que pueden demandar mucha atención, d
 
 
 
-<img src="dashboard.png" alt="drawing"  height ="300" width="500" />
+<img src="doc/dashboard.png" alt="drawing"  height ="300" width="500" />
 ```markdown
 ejemplos de codigo o cosas que queres recuadrar en este formato
 dddd
@@ -22,7 +22,7 @@ dddd
      - First nested list item
        - Second nested list item
 
-<img src="foto1.jpeg" alt="drawing"  height ="200" width="200" />
+<img src="doc/foto1.jpeg" alt="drawing"  height ="200" width="200" />
 For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
 
 ### Jekyll Themes
