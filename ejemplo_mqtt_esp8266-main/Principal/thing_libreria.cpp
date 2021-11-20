@@ -1,11 +1,11 @@
 #include "thing_libreria.h"
 
-const int triggerPin = 15;
-const int echoPin = 14;
+const int laserPin = 12;
+
 SMTPSession smtp;
 const char* ssid = "perdedores";
 const char* password = "somos perdedores 1375";
-const char* token = "WCw44NcuFq0tT0eVRQ5l";
+const char* token = "KJzLDPenPQMncHqtD9DF";
 ////////////////////// setup wifi///////////////////////////////////////
 void setup_wifi() {
 
@@ -30,6 +30,30 @@ void setup_wifi() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
+
+
+///////////setup wifi 2//////////////////////////////
+
+//////wifi 2////
+void setup_wifi2() {
+  IPAddress ip;
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(F("."));
+  }
+  ip = WiFi.localIP();//local IP del server
+  Serial.println(F("WiFi connected"));
+  Serial.println("");
+  Serial.println(ip);
+  Serial.print("Stream Link: http://");
+  Serial.print(ip);
+  Serial.println("/mjpeg/1");
+}
+
 ////////////////////MAIL/////////////////////////////////////////
 void setup_session(ESP_Mail_Session &session){
   session.server.host_name = SMTP_HOST;
@@ -101,25 +125,17 @@ void smtpCallback(SMTP_Status status){
     Serial.println("----------------\n");
   }
 }
-/////////////////////////////////////////////////////////////
-long readUltrasonicDistance(){
-  pinMode(triggerPin, OUTPUT);  // Clear the trigger
-  digitalWrite(triggerPin, LOW);
-  delayMicroseconds(2);
-  // Sets the trigger pin to HIGH state for 10 microseconds
-  digitalWrite(triggerPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(triggerPin, LOW);
-  pinMode(echoPin, INPUT);
-  // Reads the echo pin, and returns the sound wave travel time in microseconds
-  return 0.01723*pulseIn(echoPin, HIGH);
-}
+
 ////////////prende apaga led/////////////////////////////////////
 void setBlueLed(bool value){
+  pinMode(laserPin, OUTPUT);
+  Serial.println(value);
   if (value){
-  digitalWrite(2, HIGH);
+  digitalWrite(laserPin, HIGH);
+  Serial.println("Estoy en HIGH");
 } else {
-  digitalWrite(2, LOW);
+  Serial.println("Estoy en LOW");
+  digitalWrite(laserPin, LOW);
 }
 }
 ////////////END prende apaga led/////////////////////////////////////
@@ -144,3 +160,7 @@ void reconnect(PubSubClient &client) {//reconectarse a thingsboard
     }
   }
 }
+
+
+
+/////////////////////////////////////////////////////////////

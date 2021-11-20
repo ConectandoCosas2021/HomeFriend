@@ -28,7 +28,7 @@ using namespace Eloquent::Vision;
 
  //podriamos ver de setearlos online
 #define DIFF_THRESHOLD 15
-#define MOTION_THRESHOLD 0.10
+#define MOTION_THRESHOLD 0.20
 
 // delete the second definition if you want to turn on code benchmarking
 //#define timeit(label, code) { uint32_t start = millis(); code; uint32_t duration = millis() - start; eloquent::io::print_all("It took ", duration, " millis for ", label); }
@@ -57,14 +57,13 @@ void set_motion_config(){
     motion.setDebounceFrames(5);                 // prevent consecutive triggers  
   }
   
-void hay_movimiento(){
+void hay_movimiento(bool &bandera){
   if (motion.triggered()) {
         Serial.println("Motion detected");
         // uncomment to save to disk
         // save();
-        delay(1000);
-    }
-  
+        bandera = true;
+    }   
   }
 // void capture() {
 //     uint8_t downscaled[w * h];
@@ -84,7 +83,7 @@ void procces_buffer(uint8_t* buffer) {
     timeit("motion detection", motion.detect(downscaled));             // detect motion on the downscaled image
     eloquent::io::print_all(motion.changes(), " pixels changed");      //detecata si hubo cambio puede ir en otra llamada
     promedio= motion.detect_bright(downscaled);           // detect motion on the downscaled image
-    Serial.println(promedio);
+//    Serial.println(promedio);
 }
 
 /**

@@ -7,7 +7,7 @@
 void capture();
 void save();
 void start_camera(); //inicia la camara
-void hay_movimiento(); // detecta si hay movimieto
+void hay_movimiento(bool &bandera); // detecta si hay movimieto
 void set_motion_config(); //setea la config de la librerias para detectar movmiento
 
 void procces_buffer( uint8_t* buffer);//toma un buffer con la imagen y lo procesa
