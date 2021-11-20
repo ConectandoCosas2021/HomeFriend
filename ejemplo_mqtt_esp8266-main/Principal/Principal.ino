@@ -241,7 +241,7 @@ void loop(){
     Serial.print("valor de bandera fuera antes de enviar" );Serial.println(mov_detected);  
     mov_detected=false;
     client.publish("v1/devices/me/telemetry", msg);  
-    snprintf (msg, MSG_BUFFER_SIZE, "{'server_ip': %ld}", WiFi.localIP().toString());    
+    snprintf (msg, MSG_BUFFER_SIZE, "{'server_ip': %s}", WiFi.localIP().toString().c_str());    
     client.publish("v1/devices/me/telemetry", msg);
     }
 }//end loop
