@@ -23,7 +23,7 @@ char msg[MSG_BUFFER_SIZE];
 int value = 0;
 boolean estado = false;
 int cm = 0; //cm del sensor de ultra sonido
-
+int count_on=0;
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -57,7 +57,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 ////////////////////////////////////////////////////////////////////////////////////
 ///////                            SERVO                                     ///////
 ////////////////////////////////////////////////////////////////////////////////////  
-#define SERVO_1 14
+#define SERVO_1 27
 
 unsigned long empezo = 0;
 Servo servoN1;
@@ -103,6 +103,7 @@ void setup() {
   setup_wifi();
   
 } 
+
 void loop(){
   
   if (!client.connected()) {//conexion a thingsboard
@@ -130,6 +131,9 @@ void loop(){
         client.publish("v1/devices/me/telemetry", msg);
         snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", hum);
         client.publish("v1/devices/me/telemetry", msg);
+        snprintf (msg, MSG_BUFFER_SIZE, "{'prendido': %ld}", count_on);
+        client.publish("v1/devices/me/telemetry", msg);
+        count_on++;
       }
     }
 }//end loop
