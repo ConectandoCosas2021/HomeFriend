@@ -3,9 +3,19 @@
 const int laserPin = 12;
 //const int triggerPin = 15;
 //const int echoPin = 14;
-const char* ssid = "perdedores";
-const char* password = "somos perdedores 1375";
+const char* ssid = "iPhone";
+const char* password = "gabriel9";
 const char* token = "H27rHId7IM9zxemfkjXb"; //Fijarse nuevo token
+
+//Variables y constantes para micrófono y filtro pasa banda
+#define alphaLO 0.025
+#define alphaHI 0.7
+#define SAMPLES 512
+int adc_raw = 0;
+double adc_lo = 0;
+double adc_hi = 0;
+double adc_filtrado = 0;
+long sum = 0;
 
 ////////////////////// setup wifi///////////////////////////////////////
 void setup_wifi() {
@@ -78,3 +88,24 @@ void reconnect(PubSubClient &client) {//reconectarse a thingsboard
     }
   }
 }
+
+////////////Micrófono y filtro///////////////////////////
+void filtroPasaBanda(double vSamples[]){
+   for ( int i = 0 ; i <SAMPLES; i ++){
+   adc_raw = analogRead(35);
+   adc_lo = (alphaLO*adc_raw) + ((1-alphaLO)*adc_lo);
+   adc_hi = (alphaHI*adc_raw) + ((1-alphaHI)*adc_hi);
+   vSamples[i] = adc_hi - adc_lo; //Guardamos señal filtrada
+   }
+}
+double average(double vSamples[], double promedio){
+  sum = 0;
+  for ( int i = 0 ; i <SAMPLES; i ++)  
+  { 
+    sum = sum + abs(vSamples[i]);
+  } 
+  promedio = sum/SAMPLES; // Calculate the average value
+  return promedio - 50;
+}
+
+//////////////////////////////////////////////////////////////

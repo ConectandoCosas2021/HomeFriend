@@ -15,6 +15,13 @@ DHTesp dht;
 /*#define pdTICKS_TO_MS( xTicks )   ( ( uint32_t ) ( xTicks ) * 1000 / configTICK_RATE_HZ )
 void bring_resources();*/
 
+////////////Variables de micrófono/////////////
+#define SAMPLES 512 
+double promedio = 0;
+int dB = 0;
+//int soundSignal = 0;
+double vSamples[SAMPLES]; //create vector of size SAMPLES to hold real values
+
 
 int gradosActual = 0;
 unsigned long lastMsg = 0;
@@ -122,6 +129,10 @@ void loop(){
     int hum = (int)lastValues.humidity;
     Serial.print("temperatura ");Serial.println(temp);
     Serial.print("humedad ");Serial.println(hum);
+    //Mediciones de micrófono
+    filtroPasaBanda(vSamples);
+    promedio = average(vSamples, promedio);
+    dB = (int)20*log10(promedio);
     
     if (temp==2147483647 || hum==2147483647){    
       Serial.println("No se tomo bien la temperatura");
@@ -135,5 +146,8 @@ void loop(){
         client.publish("v1/devices/me/telemetry", msg);
         count_on++;
       }
+        snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB);
+        Serial.print("Intensidad sonora(dB): ");Serial.println(msg);
+        client.publish("v1/devices/me/telemetry", msg);
     }
 }//end loop
