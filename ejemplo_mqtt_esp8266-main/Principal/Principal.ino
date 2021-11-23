@@ -3,7 +3,6 @@
 #include "Esp32MQTTClient.h"
 #include <ESP32Servo.h>
 
-
 DynamicJsonDocument incoming_message(1024);
 
 WiFiClient espClient;
@@ -16,11 +15,12 @@ DHTesp dht;
 void bring_resources();*/
 
 ////////////Variables de micrófono/////////////
-#define SAMPLES 512 
+#define SAMPLES 512
+int dB_raw = 0;
+int dB_filtrado = 0;
 double promedio = 0;
-int dB = 0;
-//int soundSignal = 0;
-double vSamples[SAMPLES]; //create vector of size SAMPLES to hold real values
+double vRaw[SAMPLES]; //vector de muestras sin filtrar
+double vFiltrado[SAMPLES]; //vector de muestras filtradas
 
 
 int gradosActual = 0;
@@ -129,10 +129,12 @@ void loop(){
     int hum = (int)lastValues.humidity;
     Serial.print("temperatura ");Serial.println(temp);
     Serial.print("humedad ");Serial.println(hum);
+    
     //Mediciones de micrófono
-    filtroPasaBanda(vSamples);
-    promedio = average(vSamples, promedio);
-    dB = (int)20*log10(promedio);
+    filtroPasaBanda(vFiltrado, 0.45, 0.7); //alphaLO = 0.45; alphaHI = 0.7
+    filtroPasaBanda(vRaw, 0.02, 0.5); //alphaLO = 0.02; alphaHI = 0.5
+    dB_filtrado = (int)20*log10(average(vFiltrado, promedio)) + 20;
+    dB_raw = (int)20*log10(average(vRaw, promedio)) + 20;
     
     if (temp==2147483647 || hum==2147483647){    
       Serial.println("No se tomo bien la temperatura");
@@ -146,7 +148,8 @@ void loop(){
         client.publish("v1/devices/me/telemetry", msg);
         count_on++;
       }
-        snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB);
+        
+        snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
         Serial.print("Intensidad sonora(dB): ");Serial.println(msg);
         client.publish("v1/devices/me/telemetry", msg);
     }

@@ -12,5 +12,5 @@ void setBlueLed(bool value);
 void setup_wifi();
 void reconnect(PubSubClient &client);
 void setGrados(int grados, int &gradosActual);
-void filtroPasaBanda(double vSamples[]);
+void filtroPasaBanda(double vSamples[], double alphaLO, double alphaHI);
 double average(double vSamples[], double promedio);
