@@ -22,6 +22,9 @@ double promedio = 0;
 double vRaw[SAMPLES]; //vector de muestras sin filtrar
 double vFiltrado[SAMPLES]; //vector de muestras filtradas
 
+///////////Variable de gato////////////////
+boolean gato_anterior = false; // Guardo el estado previo del gato (si no cambia no mando mensaje)
+boolean gato_cerca = false; // Estado actual del gato
 
 int gradosActual = 0;
 unsigned long lastMsg = 0;
@@ -31,6 +34,7 @@ int value = 0;
 boolean estado = false;
 int cm = 0; //cm del sensor de ultra sonido
 int count_on=0;
+
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -135,6 +139,9 @@ void loop(){
     filtroPasaBanda(vRaw, 0.02, 0.5); //alphaLO = 0.02; alphaHI = 0.5
     dB_filtrado = (int)20*log10(average(vFiltrado, promedio)) + 20;
     dB_raw = (int)20*log10(average(vRaw, promedio)) + 20;
+
+    ///// aca necesito metodo para detectar el gato por sonido
+    gato_cerca = gatoPresente(gato_anterior, dB_filtrado);
     
     if (temp==2147483647 || hum==2147483647){    
       Serial.println("No se tomo bien la temperatura");
@@ -150,7 +157,35 @@ void loop(){
       }
         
         snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
-        Serial.print("Intensidad sonora(dB): ");Serial.println(msg);
         client.publish("v1/devices/me/telemetry", msg);
+
+        if(gato_cerca){ // Si el gato está cerca, mando el mensaje
+          DynamicJsonDocument resp(256);
+          resp["gato_cerca"] = gato_cerca;
+          char buffer[256];
+          serializeJson(resp, buffer);
+          client.publish("v1/devices/me/attributes", buffer);
+          Serial.print("Publish message [attribute]: ");
+          Serial.println(buffer);
+        }
+        else{
+          DynamicJsonDocument resp(256);
+          resp["gato_cerca"] = gato_cerca;
+          char buffer[256];
+          serializeJson(resp, buffer);
+          client.publish("v1/devices/me/attributes", buffer);
+          Serial.print("Publish message [attribute]: ");
+          Serial.println(buffer);
+          }
     }
 }//end loop
+
+boolean gatoPresente(boolean gato_anterior, int dB_filtrado){
+
+  if(!gato_anterior && dB_filtrado > 55){ //Si gato_anterior está en false y dB_filtrado > 50
+    return true; //El gato está cerca
+    }
+  else{
+    return false;
+  }
+}
