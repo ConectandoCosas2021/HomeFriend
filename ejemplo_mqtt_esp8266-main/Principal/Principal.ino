@@ -8,8 +8,11 @@ DynamicJsonDocument incoming_message(1024);
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHTesp dht;
+Servo myservo;
+TaskHandle_t Task1;
 #define DHT_PIN 2
 #define MSG_BUFFER_SIZE  50
+#define LDR_PIN 23
 
 /*#define pdTICKS_TO_MS( xTicks )   ( ( uint32_t ) ( xTicks ) * 1000 / configTICK_RATE_HZ )
 void bring_resources();*/
@@ -25,6 +28,11 @@ double vFiltrado[SAMPLES]; //vector de muestras filtradas
 ///////////Variable de gato////////////////
 boolean gato_anterior = false; // Guardo el estado previo del gato (si no cambia no mando mensaje)
 boolean gato_cerca = false; // Estado actual del gato
+boolean activarJuguete = false;
+
+///////////Variable de luz////////////////
+boolean hubo_Luz = false;
+
 
 int gradosActual = 0;
 unsigned long lastMsg = 0;
@@ -101,6 +109,7 @@ void setGrados(int grados, int &gradosActual){
 
 //////////////////////SETUP////////////////////////////////////////////////
 const char* mqtt_server = "demo.thingsboard.io";
+
 void setup() {
   servo1.write(gradosActual);
   servo1.setPeriodHertz(50); // standard 50 hz servo
@@ -112,7 +121,16 @@ void setup() {
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
   setup_wifi();
-  
+
+    xTaskCreatePinnedToCore(
+                    Task1code,   /* Task function. */
+                    "Task1",     /* name of task. */
+                    10000,       /* Stack size of task */
+                    NULL,        /* parameter of the task */
+                    1,           /* priority of the task */
+                    &Task1,      /* Task handle to keep track of created task */
+                    0);          /* pin task to core 0 */                  
+  delay(500); 
 } 
 
 void loop(){
@@ -139,10 +157,9 @@ void loop(){
     filtroPasaBanda(vRaw, 0.02, 0.5); //alphaLO = 0.02; alphaHI = 0.5
     dB_filtrado = (int)20*log10(average(vFiltrado, promedio)) + 20;
     dB_raw = (int)20*log10(average(vRaw, promedio)) + 20;
-
     ///// aca necesito metodo para detectar el gato por sonido
     gato_cerca = gatoPresente(gato_anterior, dB_filtrado);
-    
+    /*
     if (temp==2147483647 || hum==2147483647){    
       Serial.println("No se tomo bien la temperatura");
     }
@@ -154,7 +171,7 @@ void loop(){
         snprintf (msg, MSG_BUFFER_SIZE, "{'prendido': %ld}", count_on);
         client.publish("v1/devices/me/telemetry", msg);
         count_on++;
-      }
+      }*/
         
         snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
         client.publish("v1/devices/me/telemetry", msg);
@@ -167,6 +184,7 @@ void loop(){
           client.publish("v1/devices/me/attributes", buffer);
           Serial.print("Publish message [attribute]: ");
           Serial.println(buffer);
+          activarJuguete = true; //Habilita el giro del servo (core 0)
         }
         else{
           DynamicJsonDocument resp(256);
@@ -177,6 +195,10 @@ void loop(){
           Serial.print("Publish message [attribute]: ");
           Serial.println(buffer);
           }
+        
+          snprintf (msg, MSG_BUFFER_SIZE, "{'hubo_Luz': %ld}", hubo_Luz);
+          client.publish("v1/devices/me/telemetry", msg);
+          hubo_Luz = false;
     }
 }//end loop
 
@@ -187,5 +209,27 @@ boolean gatoPresente(boolean gato_anterior, int dB_filtrado){
     }
   else{
     return false;
+  }
+}
+
+void Task1code( void * pvParameters ){
+  for(;;){
+    if(activarJuguete){
+      if (!myservo.attached()) {
+      myservo.setPeriodHertz(50); // standard 50 hz servo
+      myservo.attach(33, 1000, 2000); // Attach the servo after it has been detatched
+    }
+    myservo.write(0);
+    delay(10000);
+    myservo.write(90);
+    myservo.detach(); // Turn the servo off for a while
+    }
+    activarJuguete = false;
+    vTaskDelay(10);
+
+    //Intensidad lumínica
+    if(digitalRead(LDR_PIN)==LOW){
+      hubo_Luz = true;
+      }
   }
 }
