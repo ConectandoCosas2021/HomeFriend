@@ -1,0 +1,151 @@
+{
+  "ruleChain": {
+    "additionalInfo": {
+      "description": ""
+    },
+    "name": "Temperatura",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 339,
+          "layoutY": 151
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Under Threshold",
+        "debugMode": true,
+        "configuration": {
+          "jsScript": "return msg.temperatura >= 23;"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 615,
+          "layoutY": 64
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Add temperature to metadata",
+        "debugMode": true,
+        "configuration": {
+          "jsScript": "metadata.temperatura = msg.temperatura;\nreturn {msg: msg, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 882,
+          "layoutY": 56
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create alarm",
+        "debugMode": true,
+        "configuration": {
+          "alarmDetailsBuildJs": "var details = {};\r\ndetails.temperatura = msg.temperatura;\r\n\r\nif (metadata.prevAlarmDetails) {\r\n    var prevDetails = JSON.parse(metadata.prevAlarmDetails);\r\n    details.count = prevDetails.count + 1;\r\n} else {\r\n    details.count = 1;\r\n}\r\n\r\nreturn details;",
+          "useMessageAlarmData": false,
+          "alarmType": "Critical Temperatura",
+          "severity": "CRITICAL",
+          "propagate": true,
+          "relationTypes": [],
+          "dynamicSeverity": false
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Temperatura alta",
+          "layoutX": 1150,
+          "layoutY": 58
+        },
+        "type": "org.thingsboard.rule.engine.mail.TbMsgToEmailNode",
+        "name": "Crear mail",
+        "debugMode": true,
+        "configuration": {
+          "fromTemplate": "homefriend@gmail.com",
+          "toTemplate": "luispsn1497@gmail.com",
+          "ccTemplate": null,
+          "bccTemplate": null,
+          "subjectTemplate": "Device ${deviceType} Alerta! Temperaturas altas",
+          "mailBodyType": "false",
+          "isHtmlTemplate": null,
+          "bodyTemplate": "Device ${deviceName} tiene una temperatura de ${temperatura}°C"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1412,
+          "layoutY": 68
+        },
+        "type": "org.thingsboard.rule.engine.mail.TbSendEmailNode",
+        "name": "Mandar Mail",
+        "debugMode": false,
+        "configuration": {
+          "useSystemSmtpSettings": false,
+          "smtpProtocol": "smtps",
+          "smtpHost": "smtp.gmail.com",
+          "smtpPort": 465,
+          "timeout": 10000,
+          "enableTls": false,
+          "tlsVersion": "TLSv1.2",
+          "enableProxy": false,
+          "proxyHost": null,
+          "proxyPort": null,
+          "proxyUser": null,
+          "proxyPassword": null,
+          "username": "homefriend2021@gmail.com",
+          "password": "rdvqzfqbohwebdxn"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 617,
+          "layoutY": 257
+        },
+        "type": "org.thingsboard.rule.engine.action.TbClearAlarmNode",
+        "name": "Clear Alarm",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "General Alarm",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    delete metadata.prevAlarmDetails;\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 5,
+        "type": "False"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 3,
+        "type": "Created"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}

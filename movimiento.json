@@ -1,0 +1,186 @@
+{
+  "ruleChain": {
+    "additionalInfo": {
+      "description": ""
+    },
+    "name": "Movimiento",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null
+  },
+  "metadata": {
+    "firstNodeIndex": 1,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 612,
+          "layoutY": 57
+        },
+        "type": "org.thingsboard.rule.engine.metadata.TbGetTelemetryNode",
+        "name": "agrego server_ip",
+        "debugMode": true,
+        "configuration": {
+          "latestTsKeyNames": [
+            "server_ip"
+          ],
+          "aggregation": "NONE",
+          "fetchMode": "FIRST",
+          "orderBy": "ASC",
+          "limit": 1000,
+          "useMetadataIntervalPatterns": false,
+          "startInterval": 2,
+          "startIntervalTimeUnit": "MINUTES",
+          "endInterval": 1,
+          "endIntervalTimeUnit": "MINUTES",
+          "startIntervalPattern": "",
+          "endIntervalPattern": ""
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 168,
+          "layoutY": 263
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbCheckMessageNode",
+        "name": "chequeo telemetria movimiento",
+        "debugMode": false,
+        "configuration": {
+          "messageNames": [
+            "movimiento"
+          ],
+          "metadataNames": [],
+          "checkAllKeys": true
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 358,
+          "layoutY": 198
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Under Threshold",
+        "debugMode": true,
+        "configuration": {
+          "jsScript": "return msg.movimiento == 1;"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 882,
+          "layoutY": 56
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create alarm",
+        "debugMode": true,
+        "configuration": {
+          "alarmDetailsBuildJs": "var details = {};\r\ndetails.movimiento = msg.movimiento;\r\ndetails.server_ip = msg.server_ip;\r\nif (metadata.prevAlarmDetails) {\r\n    var prevDetails = JSON.parse(metadata.prevAlarmDetails);\r\n    details.count = prevDetails.count + 1;\r\n} else {\r\n    details.count = 1;\r\n}\r\n\r\nreturn details;",
+          "useMessageAlarmData": false,
+          "alarmType": "Critical Temperatura",
+          "severity": "CRITICAL",
+          "propagate": true,
+          "relationTypes": [],
+          "dynamicSeverity": false
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Movimiento",
+          "layoutX": 1150,
+          "layoutY": 58
+        },
+        "type": "org.thingsboard.rule.engine.mail.TbMsgToEmailNode",
+        "name": "Crear mail",
+        "debugMode": true,
+        "configuration": {
+          "fromTemplate": "homefriend@gmail.com",
+          "toTemplate": "luispsn1497@gmail.com",
+          "ccTemplate": null,
+          "bccTemplate": null,
+          "subjectTemplate": "HomeFriend Alerta Movimiento!",
+          "mailBodyType": "false",
+          "isHtmlTemplate": null,
+          "bodyTemplate": "La cámara del HomeFriend ha detectado movimiento.\nHaga click aquí para ver la cámara URL Local http://${server_ip}/mjpeg/1\n${server_ip}\nDevice ${deviceName} tiene una temperatura de $[movimiento]\n"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1412,
+          "layoutY": 68
+        },
+        "type": "org.thingsboard.rule.engine.mail.TbSendEmailNode",
+        "name": "Mandar Mail",
+        "debugMode": false,
+        "configuration": {
+          "useSystemSmtpSettings": false,
+          "smtpProtocol": "smtps",
+          "smtpHost": "smtp.gmail.com",
+          "smtpPort": 465,
+          "timeout": 10000,
+          "enableTls": false,
+          "tlsVersion": "TLSv1.2",
+          "enableProxy": false,
+          "proxyHost": null,
+          "proxyPort": null,
+          "proxyUser": null,
+          "proxyPassword": null,
+          "username": "homefriend2021@gmail.com",
+          "password": "rdvqzfqbohwebdxn"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 912,
+          "layoutY": 402
+        },
+        "type": "org.thingsboard.rule.engine.action.TbClearAlarmNode",
+        "name": "Clear Alarm",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "General Alarm",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    //remove prevAlarmDetails from metadata\n    delete metadata.prevAlarmDetails;\n    //now metadata is the same as it comes IN this rule node\n}\n\n\nreturn details;"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 3,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "True"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 6,
+        "type": "False"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 0,
+        "type": "True"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Updated"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 5,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}
