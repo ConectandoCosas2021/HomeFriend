@@ -71,7 +71,7 @@ void setGrados(int grados, int &gradosActual){
   if(gradosActual<grados){
     for(int i=gradosActual; i < grados; i++){     
       servo1.write(i);       
-      while (millis() - empezo < 20) {            
+      while (millis() - empezo < 5) {            
       }
       empezo = millis(); 
     }
@@ -79,7 +79,7 @@ void setGrados(int grados, int &gradosActual){
   else{
     for(int i=gradosActual; i > grados; i--){    
       servo1.write(i);       
-      while (millis() - empezo < 20) {            
+      while (millis() - empezo < 5) {            
       }
       empezo = millis(); 
     }
