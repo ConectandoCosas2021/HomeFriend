@@ -90,7 +90,7 @@ void setGrados(int grados, int &gradosActual){
   if(gradosActual<grados){
     for(int i=gradosActual; i < grados; i++){     
       servo1.write(i);       
-      while (millis() - empezo < 20) {            
+      while (millis() - empezo < 10) {            
       }
       empezo = millis(); 
     }
@@ -159,7 +159,7 @@ void loop(){
     dB_raw = (int)20*log10(average(vRaw, promedio)) + 20;
     ///// aca necesito metodo para detectar el gato por sonido
     gato_cerca = gatoPresente(gato_anterior, dB_filtrado);
-    /*
+
     if (temp==2147483647 || hum==2147483647){    
       Serial.println("No se tomo bien la temperatura");
     }
@@ -171,7 +171,7 @@ void loop(){
         snprintf (msg, MSG_BUFFER_SIZE, "{'prendido': %ld}", count_on);
         client.publish("v1/devices/me/telemetry", msg);
         count_on++;
-      }*/
+      }
         
         snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
         client.publish("v1/devices/me/telemetry", msg);
