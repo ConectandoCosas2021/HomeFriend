@@ -10,9 +10,9 @@ PubSubClient client(espClient);
 DHTesp dht;
 Servo myservo;
 TaskHandle_t Task1;
-#define DHT_PIN 2
+#define DHT_PIN 21
 #define MSG_BUFFER_SIZE  50
-#define LDR_PIN 23
+#define LDR_PIN 22
 
 /*#define pdTICKS_TO_MS( xTicks )   ( ( uint32_t ) ( xTicks ) * 1000 / configTICK_RATE_HZ )
 void bring_resources();*/
@@ -36,13 +36,15 @@ boolean hubo_Luz = false;
 
 int gradosActual = 0;
 unsigned long lastMsg = 0;
+unsigned long sound_time = 0;
+unsigned long giro_time = 0;
 char msg[MSG_BUFFER_SIZE];
 
 int value = 0;
 boolean estado = false;
 int cm = 0; //cm del sensor de ultra sonido
 int count_on=0;
-
+boolean mic_enable= true;
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -69,6 +71,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
     if (metodo == "setGrados") {  //Check device status. Expects a response to the same topic number with status=true.
       int grados = incoming_message["params"];
       setGrados(grados,gradosActual);
+    }  
+    if (metodo == "micEnable") {  //Check device status. Expects a response to the same topic number with status=true.
+      mic_enable = incoming_message["params"];      
     }    
   }
 }//end callback
@@ -116,7 +121,7 @@ void setup() {
   pinMode(2, OUTPUT);     //(LED AZUL)
   Serial.begin(115200);
   /////
-  dht.setup(DHT_PIN, DHTesp::DHT11);
+  dht.setup(DHT_PIN, DHTesp::DHT22);
   /////
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
@@ -139,11 +144,22 @@ void loop(){
     reconnect(client);
   }
   client.loop();
-  
-  //cm = readUltrasonicDistance();
-  cm = 22; //Esto hay que sacarlo cuando metamos el sensor de distancia  
+  //Mediciones de micrófono
 
-  
+  if ( millis() - sound_time > 20) {     //TODO Poner millis
+    sound_time = millis();
+    filtroPasaBanda(vFiltrado, 0.45, 0.7);  //alphaLO = 0.45; alphaHI = 0.7  
+    filtroPasaBanda(vRaw, 0.02, 0.5);       //alphaLO = 0.02; alphaHI = 0.5
+    dB_raw = (int)20*log10(average(vRaw, promedio)) + 20;
+    dB_filtrado = (int)20*log10(average(vFiltrado, promedio)+1) + 20;
+    
+    
+    if( dB_filtrado > 60 && !activarJuguete){ //Si gato_anterior está en false y dB_filtrado > 50
+      Serial.println(dB_filtrado);   
+      giro_time= millis();
+      gato_cerca= true;                       //El gato está cerca
+      }  
+  }   
   if ( millis() - lastMsg > 5000) { //TODO Poner millis
     lastMsg = millis();
     TempAndHumidity lastValues = dht.getTempAndHumidity();//Tomo la temperatura   
@@ -152,14 +168,6 @@ void loop(){
     Serial.print("temperatura ");Serial.println(temp);
     Serial.print("humedad ");Serial.println(hum);
     
-    //Mediciones de micrófono
-    filtroPasaBanda(vFiltrado, 0.45, 0.7); //alphaLO = 0.45; alphaHI = 0.7
-    filtroPasaBanda(vRaw, 0.02, 0.5); //alphaLO = 0.02; alphaHI = 0.5
-    dB_filtrado = (int)20*log10(average(vFiltrado, promedio)) + 20;
-    dB_raw = (int)20*log10(average(vRaw, promedio)) + 20;
-    ///// aca necesito metodo para detectar el gato por sonido
-    gato_cerca = gatoPresente(gato_anterior, dB_filtrado);
-
     if (temp==2147483647 || hum==2147483647){    
       Serial.println("No se tomo bien la temperatura");
     }
@@ -168,65 +176,58 @@ void loop(){
         client.publish("v1/devices/me/telemetry", msg);
         snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", hum);
         client.publish("v1/devices/me/telemetry", msg);
-        snprintf (msg, MSG_BUFFER_SIZE, "{'prendido': %ld}", count_on);
-        client.publish("v1/devices/me/telemetry", msg);
-        count_on++;
+       
       }
         
-        snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
-        client.publish("v1/devices/me/telemetry", msg);
+    snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
+    client.publish("v1/devices/me/telemetry", msg);
+ 
+    DynamicJsonDocument resp(256);
+    resp["gato_cerca"] = gato_cerca;
+    char buffer[256];
+    serializeJson(resp, buffer);
+    client.publish("v1/devices/me/attributes", buffer);
+    Serial.print("Publish message gato_cerca : ");
+    Serial.println(gato_cerca);        
+    if(gato_cerca && mic_enable ){ // Si el gato está cerca, mando el mensaje
+      activarJuguete = true; //Habilita el giro del servo (core 0)          
+    }
+    gato_cerca=false;   
+      
+    snprintf (msg, MSG_BUFFER_SIZE, "{'hubo_Luz': %ld}", hubo_Luz);
+    Serial.print("imprimio luz"); Serial.println(hubo_Luz);
+    client.publish("v1/devices/me/telemetry", msg);
+    hubo_Luz = false;
 
-        if(gato_cerca){ // Si el gato está cerca, mando el mensaje
-          DynamicJsonDocument resp(256);
-          resp["gato_cerca"] = gato_cerca;
-          char buffer[256];
-          serializeJson(resp, buffer);
-          client.publish("v1/devices/me/attributes", buffer);
-          Serial.print("Publish message [attribute]: ");
-          Serial.println(buffer);
-          activarJuguete = true; //Habilita el giro del servo (core 0)
-        }
-        else{
-          DynamicJsonDocument resp(256);
-          resp["gato_cerca"] = gato_cerca;
-          char buffer[256];
-          serializeJson(resp, buffer);
-          client.publish("v1/devices/me/attributes", buffer);
-          Serial.print("Publish message [attribute]: ");
-          Serial.println(buffer);
-          }
-        
-          snprintf (msg, MSG_BUFFER_SIZE, "{'hubo_Luz': %ld}", hubo_Luz);
-          client.publish("v1/devices/me/telemetry", msg);
-          hubo_Luz = false;
+    snprintf (msg, MSG_BUFFER_SIZE, "{'prendido': %ld}", count_on);
+    client.publish("v1/devices/me/telemetry", msg);
+    count_on++;  
     }
 }//end loop
+//Uso esta funcion para detectar si el gato cerca
+boolean gatoPresente( int dB_filtrado){
 
-boolean gatoPresente(boolean gato_anterior, int dB_filtrado){
-
-  if(!gato_anterior && dB_filtrado > 55){ //Si gato_anterior está en false y dB_filtrado > 50
+  if( dB_filtrado > 55){ //Si gato_anterior está en false y dB_filtrado > 50
     return true; //El gato está cerca
     }
-  else{
-    return false;
-  }
 }
 
 void Task1code( void * pvParameters ){
   for(;;){
     if(activarJuguete){
       if (!myservo.attached()) {
-      myservo.setPeriodHertz(50); // standard 50 hz servo
-      myservo.attach(33, 1000, 2000); // Attach the servo after it has been detatched
-    }
-    myservo.write(0);
-    delay(10000);
-    myservo.write(90);
-    myservo.detach(); // Turn the servo off for a while
-    }
-    activarJuguete = false;
+        myservo.setPeriodHertz(50); // standard 50 hz servo
+        myservo.attach(33, 1000, 2000); // Attach the servo after it has been detatched
+        }
+      myservo.write(0);
+      if ( millis() - giro_time > 10000) {
+         myservo.write(90);
+         myservo.detach(); // Turn the servo off for a while
+         activarJuguete = false;
+      }     
+    }    
+    
     vTaskDelay(10);
-
     //Intensidad lumínica
     if(digitalRead(LDR_PIN)==LOW){
       hubo_Luz = true;
