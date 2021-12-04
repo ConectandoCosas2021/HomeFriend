@@ -13,6 +13,7 @@ TaskHandle_t Task1;
 #define DHT_PIN 21
 #define MSG_BUFFER_SIZE  50
 #define LDR_PIN 22
+#define GAS_PIN 18
 
 /*#define pdTICKS_TO_MS( xTicks )   ( ( uint32_t ) ( xTicks ) * 1000 / configTICK_RATE_HZ )
 void bring_resources();*/
@@ -33,6 +34,8 @@ boolean activarJuguete = false;
 ///////////Variable de luz////////////////
 boolean hubo_Luz = false;
 
+///////////Variable de gas////////////////
+boolean hubo_Gas = false;
 
 int gradosActual = 0;
 unsigned long lastMsg = 0;
@@ -165,6 +168,7 @@ void loop(){
     TempAndHumidity lastValues = dht.getTempAndHumidity();//Tomo la temperatura   
     int temp = (int)lastValues.temperature;
     int hum = (int)lastValues.humidity;
+    hubo_Gas = digitalRead(GAS_PIN); // Si es HIGH se detectó gas
     Serial.print("temperatura ");Serial.println(temp);
     Serial.print("humedad ");Serial.println(hum);
     
@@ -176,9 +180,10 @@ void loop(){
         client.publish("v1/devices/me/telemetry", msg);
         snprintf (msg, MSG_BUFFER_SIZE, "{'humedad': %ld}", hum);
         client.publish("v1/devices/me/telemetry", msg);
-       
-      }
-        
+    } 
+    snprintf (msg, MSG_BUFFER_SIZE, "{'hubo_Gas': %ld}", hubo_Gas); // Envío gas
+    client.publish("v1/devices/me/telemetry", msg);
+
     snprintf (msg, MSG_BUFFER_SIZE, "{'dB': %ld}", dB_raw);
     client.publish("v1/devices/me/telemetry", msg);
  
@@ -188,7 +193,8 @@ void loop(){
     serializeJson(resp, buffer);
     client.publish("v1/devices/me/attributes", buffer);
     Serial.print("Publish message gato_cerca : ");
-    Serial.println(gato_cerca);        
+    Serial.println(gato_cerca); 
+           
     if(gato_cerca && mic_enable ){ // Si el gato está cerca, mando el mensaje
       activarJuguete = true; //Habilita el giro del servo (core 0)          
     }
